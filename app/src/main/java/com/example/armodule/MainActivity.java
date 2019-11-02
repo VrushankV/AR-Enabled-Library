@@ -19,4 +19,9 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    public void ShowBookPath(View view){
+        Intent intent = new Intent(this, ARview.class);
+        startActivity(intent);
+    }
+
 }
