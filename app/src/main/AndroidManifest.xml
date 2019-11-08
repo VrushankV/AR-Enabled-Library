@@ -9,6 +9,7 @@
     <uses-feature android:name="android.hardware.camera2.autofocus" />
     <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"
@@ -21,6 +22,9 @@
         tools:ignore="GoogleAppIndexingWarning">
 
         <meta-data android:name="com.google.ar.core" android:value="required" />
+        <meta-data
+            android:name="com.google.android.ar.API_KEY"
+            android:value="AIzaSyDy2zxHrh66UHp0w_8v3KcKGVjLmxX8uL8"/>
 
         <activity android:name=".ARview"
             android:configChanges="orientation|screenSize"
