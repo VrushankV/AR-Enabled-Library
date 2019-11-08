@@ -24,12 +24,34 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="distanceCalculator"
-        android:text="Calculate" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+
+        <Button
+            android:id="@+id/button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="distanceCalculator"
+            android:text="Calculate" />
+
+        <Button
+            android:id="@+id/clear_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onClearButtonPressed"
+            android:text="CLEAR" />
+
+        <Button
+            android:id="@+id/resolve_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onResolveButtonPressed"
+            android:text="Resolve" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvDistance"

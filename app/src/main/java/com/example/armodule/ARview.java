@@ -1,5 +1,6 @@
 package com.example.armodule;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
@@ -11,15 +12,26 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
+import com.google.ar.core.codelab.cloudanchor.helpers.CloudAnchorManager;
+import com.google.ar.core.codelab.cloudanchor.helpers.FirebaseManager;
+import com.google.ar.core.codelab.cloudanchor.helpers.ResolveDialogFragment;
+import com.google.ar.core.codelab.cloudanchor.helpers.SnackbarHelper;
+import com.google.ar.core.codelab.cloudanchor.helpers.StorageManager;
+import com.google.ar.core.exceptions.UnavailableApkTooOldException;
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Scene;
@@ -28,6 +40,11 @@ import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.ArrayList;
+import com.google.ar.core.Config;
+import com.google.ar.core.Config.CloudAnchorMode;
+import com.google.ar.core.Session;
+
+
 
 public class ARview extends AppCompatActivity {
 
@@ -38,15 +55,31 @@ public class ARview extends AppCompatActivity {
         private static final double MIN_OPENGL_VERSION = 3.0;
         ArrayList<Anchor> anchorList = new ArrayList<Anchor>();
 
-
+        private Scene arScene;
         private ArFragment arFragment;
         private ModelRenderable andyRenderable;
         private AnchorNode currentAnchorNode;
         private TextView tvDistance;
         private Anchor currentAnchor = null;
+        private final StorageManager storageManager = new StorageManager();
+        private Button resolveButton;
+        private FirebaseManager firebaseManager;
 
 
-        @Override
+//        private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
+//        private final SnackbarHelper snackbarHelper = new SnackbarHelper();
+
+//    protected Config getSessionConfiguration(Session session) {
+//        Config config = new Config(session);
+//        config.setCloudAnchorMode(CloudAnchorMode.ENABLED);
+//        return config;
+//    }
+
+
+    private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
+    private final SnackbarHelper snackbarHelper = new SnackbarHelper();
+
+    @Override
         @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
         // CompletableFuture requires api level 24
         // FutureReturnValueIgnored is not valid
@@ -60,6 +93,32 @@ public class ARview extends AppCompatActivity {
 
             setContentView(R.layout.activity_arview);
             arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+        Session session;
+        try {
+            session = new Session(this);
+            Config c = new Config(session);
+            c.setUpdateMode(Config.UpdateMode.LATEST_CAMERA_IMAGE);
+            c.setCloudAnchorMode(CloudAnchorMode.ENABLED);
+            session.configure(c);
+
+            /*DO FROM HERE ----------------------------------*/
+            arFragment.getArSceneView().setupSession(session);
+
+
+        } catch (UnavailableArcoreNotInstalledException e) {
+            e.printStackTrace();
+        } catch (UnavailableApkTooOldException e) {
+            e.printStackTrace();
+        } catch (UnavailableSdkTooOldException e) {
+            e.printStackTrace();
+        } catch (UnavailableDeviceNotCompatibleException e) {
+            e.printStackTrace();
+        }
+
+
+
+         resolveButton = findViewById(R.id.resolve_button);
+
 
             tvDistance = findViewById(R.id.tvDistance);
 
@@ -79,7 +138,7 @@ public class ARview extends AppCompatActivity {
                                     return null;
                                 });
             }
-
+        firebaseManager = new FirebaseManager(this);
             arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
                 arFragment.onUpdate(frameTime);
                 onUpdate();
@@ -96,12 +155,20 @@ public class ARview extends AppCompatActivity {
                         // Create the Anchor.
                         Anchor anchor = hitResult.createAnchor();
                         AnchorNode anchorNode = new AnchorNode(anchor);
-                        anchorNode.setParent(arFragment.getArSceneView().getScene());
+                        arScene = arFragment.getArSceneView().getScene();
+                        resolveButton.setEnabled(false);
+
+                        arScene.addOnUpdateListener(frameTime -> cloudAnchorManager.onUpdate());
+                        anchorNode.setParent(arScene);
                         anchorList.add(anchor);
                         clearAnchor();
 
                         currentAnchor = anchor;
                         currentAnchorNode = anchorNode;
+
+                        snackbarHelper.showMessage(arFragment.getActivity(), "Now hosting anchor...");
+                        cloudAnchorManager.hostCloudAnchor(
+                                arFragment.getArSceneView().getSession(), currentAnchor, this::onHostedAnchorAvailable);
 
                         // Create the transformable andy and add it to the anchor.
                         TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
@@ -194,6 +261,105 @@ public class ARview extends AppCompatActivity {
             currentAnchorNode.getAnchor().detach();
             currentAnchorNode.setParent(null);
             currentAnchorNode = null;
+        }
+    }
+
+    private synchronized void setNewAnchor(@Nullable Anchor anchor) {
+        if (currentAnchorNode != null) {
+            // If an AnchorNode existed before, remove and nullify it.
+            arScene.removeChild(currentAnchorNode);
+            currentAnchorNode = null;
+        }
+        if (anchor != null) {
+            if (andyRenderable == null) {
+                // Display an error message if the renderable model was not available.
+                Toast toast = Toast.makeText(getApplicationContext(), "Andy model was not loaded.", Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
+                return;
+            }
+            // Create the Anchor.
+            currentAnchorNode = new AnchorNode(anchor);
+            arScene.addChild(currentAnchorNode);
+
+            // Create the transformable andy and add it to the anchor.
+            TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
+            andy.setParent(currentAnchorNode);
+            andy.setRenderable(andyRenderable);
+            andy.select();
+        }
+    }
+
+    public synchronized void onClearButtonPressed(View view) {
+        // Clear the anchor from the scene.
+
+        // The next line is the new addition.
+        cloudAnchorManager.clearListeners();
+        resolveButton.setEnabled(true);
+        setNewAnchor(null);
+    }
+
+    private synchronized void onHostedAnchorAvailable(Anchor anchor) {
+        Anchor.CloudAnchorState cloudState = anchor.getCloudAnchorState();
+        if (cloudState == Anchor.CloudAnchorState.SUCCESS) {
+            String cloudAnchorId = anchor.getCloudAnchorId();
+            firebaseManager.nextShortCode(shortCode -> {
+                if (shortCode != null) {
+                    firebaseManager.storeUsingShortCode(shortCode, cloudAnchorId);
+                    snackbarHelper
+                            .showMessage(arFragment.getActivity(), "Cloud Anchor Hosted. Short code: " + shortCode);
+                } else {
+                    // Firebase could not provide a short code.
+                    snackbarHelper
+                            .showMessage(arFragment.getActivity(), "Cloud Anchor Hosted, but could not "
+                                    + "get a short code from Firebase.");
+                }
+            });
+            setNewAnchor(anchor);
+        } else {
+            snackbarHelper.showMessage(arFragment.getActivity(), "Error while hosting: " + cloudState.toString());
+        }
+    }
+
+    public synchronized void onResolveButtonPressed(View view) {
+        ResolveDialogFragment dialog = ResolveDialogFragment.createWithOkListener(
+                this::onShortCodeEntered);;
+        dialog.show(arFragment.getFragmentManager(), "Resolve");
+    }
+
+    private synchronized void onShortCodeEntered(int shortCode) {
+        firebaseManager.getCloudAnchorId(shortCode, cloudAnchorId -> {
+            if (cloudAnchorId == null || cloudAnchorId.isEmpty()) {
+                snackbarHelper.showMessage(
+                        arFragment.getActivity(),
+                        "A Cloud Anchor ID for the short code " + shortCode + " was not found.");
+                return;
+            }
+            Toast.makeText(this,cloudAnchorId,Toast.LENGTH_LONG).show();
+            resolveButton.setEnabled(false);
+            cloudAnchorManager.resolveCloudAnchor(
+                    arFragment.getArSceneView().getSession(),
+                    cloudAnchorId,
+                    anchor -> onResolvedAnchorAvailable(anchor, shortCode));
+        });
+    }
+
+    private synchronized void onResolvedAnchorAvailable(Anchor anchor, int shortCode) {
+        Toast.makeText(this,"CALLED",Toast.LENGTH_LONG).show();
+        Anchor.CloudAnchorState cloudState = anchor.getCloudAnchorState();
+        if (cloudState == Anchor.CloudAnchorState.SUCCESS) {
+            Toast.makeText(this,"ITS WORKING",Toast.LENGTH_LONG).show();
+            snackbarHelper.showMessage(arFragment.getActivity(), "Cloud Anchor Resolved. Short code: " + shortCode);
+            setNewAnchor(anchor);
+        } else {
+            Toast.makeText(this,"ITS NOT WORKING",Toast.LENGTH_LONG).show();
+            snackbarHelper.showMessage(
+                    arFragment.getActivity(),
+                    "Error while resolving anchor with short code "
+                            + shortCode
+                            + ". Error: "
+                            + cloudState.toString());
+            resolveButton.setEnabled(true);
         }
     }
 }
