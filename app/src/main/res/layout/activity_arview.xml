@@ -38,12 +38,18 @@
             android:onClick="distanceCalculator"
             android:text="Calculate" />
 
-        <Button
-            android:id="@+id/clear_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onClearButtonPressed"
-            android:text="CLEAR" />
+<!--        <Button-->
+<!--            android:id="@+id/clear_button"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:onClick="onClearButtonPressed"-->
+<!--            android:text="CLEAR" />-->
+<!--        <Button-->
+<!--            android:id="@+id/clear_all_button"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:onClick="onClearAllButtonPressed"-->
+<!--            android:text="CLEAR ALL" />-->
 
         <Button
             android:id="@+id/resolve_button"
@@ -51,6 +57,20 @@
             android:layout_height="wrap_content"
             android:onClick="onResolveButtonPressed"
             android:text="Resolve" />
+
+        <Button
+            android:id="@+id/resolve_all_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onResolveAllButtonPressed"
+            android:text="Resolve All" />
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="113dp"
+            android:layout_height="317dp"
+            android:layout_weight="1"
+            android:text="TextView" />
+
     </LinearLayout>
 
     <TextView
