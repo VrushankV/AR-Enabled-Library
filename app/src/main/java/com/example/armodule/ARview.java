@@ -1,5 +1,6 @@
 package com.example.armodule;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -40,10 +41,18 @@ import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.ArrayList;
+import java.util.Map;
+
 import com.google.ar.core.Config;
 import com.google.ar.core.Config.CloudAnchorMode;
 import com.google.ar.core.Session;
-
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 
 public class ARview extends AppCompatActivity {
@@ -64,7 +73,7 @@ public class ARview extends AppCompatActivity {
         private final StorageManager storageManager = new StorageManager();
         private Button resolveButton;
         private FirebaseManager firebaseManager;
-
+        ArrayList<AnchorNode> anchorNodeList = new ArrayList<>();
 
 //        private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
 //        private final SnackbarHelper snackbarHelper = new SnackbarHelper();
@@ -74,10 +83,11 @@ public class ARview extends AppCompatActivity {
 //        config.setCloudAnchorMode(CloudAnchorMode.ENABLED);
 //        return config;
 //    }
-
+        private TextView tvData;
 
     private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
     private final SnackbarHelper snackbarHelper = new SnackbarHelper();
+    private DatabaseReference rootRef;
 
     @Override
         @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -119,14 +129,14 @@ public class ARview extends AppCompatActivity {
 
          resolveButton = findViewById(R.id.resolve_button);
 
-
+         tvData = findViewById(R.id.textView);
             tvDistance = findViewById(R.id.tvDistance);
 
             // When you build a Renderable, Sceneform loads its resources in the background while returning
             // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 ModelRenderable.builder()
-                        .setSource(this, R.raw.andy)
+                        .setSource(this, R.raw.arrow)
                         .build()
                         .thenAccept(renderable -> andyRenderable = renderable)
                         .exceptionally(
@@ -144,24 +154,31 @@ public class ARview extends AppCompatActivity {
                 onUpdate();
             });
 
+        arScene = arFragment.getArSceneView().getScene();
+        //resolveButton.setEnabled(false);
+
+        arScene.addOnUpdateListener(frameTime -> cloudAnchorManager.onUpdate());
+
             arFragment.setOnTapArPlaneListener(
                     (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
                         if (andyRenderable == null) {
                             return;
                         }
 
-                        Log.d("BUZZZZ TESTINNGGG:", "TAPPEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD OK NAAA???");
+                        //Log.d("BUZZZZ TESTINNGGG:", "TAPPEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD OK NAAA???");
 
                         // Create the Anchor.
                         Anchor anchor = hitResult.createAnchor();
                         AnchorNode anchorNode = new AnchorNode(anchor);
-                        arScene = arFragment.getArSceneView().getScene();
-                        resolveButton.setEnabled(false);
+                        /*arScene = arFragment.getArSceneView().getScene();
+                        //resolveButton.setEnabled(false);
 
                         arScene.addOnUpdateListener(frameTime -> cloudAnchorManager.onUpdate());
+                        */
                         anchorNode.setParent(arScene);
                         anchorList.add(anchor);
-                        clearAnchor();
+                        anchorNodeList.add(anchorNode);
+                        //clearAnchor();
 
                         currentAnchor = anchor;
                         currentAnchorNode = anchorNode;
@@ -176,7 +193,10 @@ public class ARview extends AppCompatActivity {
                         andy.setRenderable(andyRenderable);
                         andy.select();
                     });
+
+
         }
+
 
         public void onUpdate() {
             Frame frame = arFragment.getArSceneView().getArFrame();
@@ -184,7 +204,7 @@ public class ARview extends AppCompatActivity {
             Log.d("API123", "onUpdateframe... current anchor node " + (currentAnchorNode == null));
 
             Log.d("BUZZZZZZ TEsSTINGGG::: ","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-            if (currentAnchorNode != null) {
+            if (currentAnchorNode != null && currentAnchor != null) {
                 Pose objectPose = currentAnchor.getPose();
                 Pose cameraPose = frame.getCamera().getPose();
 
@@ -265,11 +285,11 @@ public class ARview extends AppCompatActivity {
     }
 
     private synchronized void setNewAnchor(@Nullable Anchor anchor) {
-        if (currentAnchorNode != null) {
+        /*if (currentAnchorNode != null) {
             // If an AnchorNode existed before, remove and nullify it.
             arScene.removeChild(currentAnchorNode);
             currentAnchorNode = null;
-        }
+        }*/
         if (anchor != null) {
             if (andyRenderable == null) {
                 // Display an error message if the renderable model was not available.
@@ -335,8 +355,9 @@ public class ARview extends AppCompatActivity {
                         "A Cloud Anchor ID for the short code " + shortCode + " was not found.");
                 return;
             }
-            Toast.makeText(this,cloudAnchorId,Toast.LENGTH_LONG).show();
-            resolveButton.setEnabled(false);
+            //
+            //Toast.makeText(this,cloudAnchorId,Toast.LENGTH_LONG).show();
+            //resolveButton.setEnabled(false);
             cloudAnchorManager.resolveCloudAnchor(
                     arFragment.getArSceneView().getSession(),
                     cloudAnchorId,
@@ -361,6 +382,49 @@ public class ARview extends AppCompatActivity {
                             + cloudState.toString());
             resolveButton.setEnabled(true);
         }
+    }
+    public void onResolveAllButtonPressed(View view){
+        //DO HERE
+        FirebaseApp firebaseApp = FirebaseApp.initializeApp(this);
+        rootRef = FirebaseDatabase.getInstance(firebaseApp).getReference().child("shared_anchor_codelab_root");
+        DatabaseReference.goOnline();
+
+        rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                if (dataSnapshot.exists()) {
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        String key = snapshot.getKey();
+                        tvData.append(key+"\t");
+                        if(key.startsWith("anchor;")){
+                            int shortCode = Integer.parseInt(key.substring(key.length()-3));
+                            firebaseManager.getCloudAnchorId(shortCode,cloudAnchorId -> {
+                                if (cloudAnchorId == null || cloudAnchorId.isEmpty()) {
+                                    snackbarHelper.showMessage(
+                                            arFragment.getActivity(),
+                                            "A Cloud Anchor ID for the short code " + shortCode + " was not found.");
+                                    return;
+                                }
+                                //Toast.makeText(getApplicationContext(),cloudAnchorId,Toast.LENGTH_LONG).show();
+                                //resolveButton.setEnabled(false);
+                                cloudAnchorManager.resolveCloudAnchor(
+                                        arFragment.getArSceneView().getSession(),
+                                        cloudAnchorId,
+                                        anchor -> onResolvedAnchorAvailable(anchor, shortCode));
+                            });
+                        }
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Toast.makeText(getApplicationContext(),"BYE", Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }
 

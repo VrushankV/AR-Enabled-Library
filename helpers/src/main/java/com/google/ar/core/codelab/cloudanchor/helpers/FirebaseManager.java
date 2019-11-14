@@ -26,7 +26,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.MutableData;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
+public class BookDataFormat{
+    String cloudAnchorId;
+    String BookId;
 
+    }
 /** Helper class for Firebase storage of cloud anchor IDs. */
 public class FirebaseManager {
 
