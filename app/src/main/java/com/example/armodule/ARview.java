@@ -54,6 +54,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import static com.example.armodule.BarcodeScanner.SCAN_DATA;
+
 
 public class ARview extends AppCompatActivity {
 
@@ -84,6 +86,7 @@ public class ARview extends AppCompatActivity {
 //        return config;
 //    }
         private TextView tvData;
+        String bookId;
 
     private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
     private final SnackbarHelper snackbarHelper = new SnackbarHelper();
@@ -101,6 +104,9 @@ public class ARview extends AppCompatActivity {
                 return;
             }
 
+
+            bookId = getIntent().getStringExtra(SCAN_DATA);
+            Toast.makeText(getApplicationContext(), bookId, Toast.LENGTH_LONG).show();
             setContentView(R.layout.activity_arview);
             arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         Session session;

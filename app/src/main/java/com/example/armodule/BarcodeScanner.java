@@ -28,6 +28,8 @@ import com.google.zxing.Result;
 
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
+import static androidx.mediarouter.media.MediaControlIntent.EXTRA_MESSAGE;
+
 
 public class BarcodeScanner extends AppCompatActivity implements ZXingScannerView.ResultHandler {
 
@@ -35,7 +37,7 @@ public class BarcodeScanner extends AppCompatActivity implements ZXingScannerVie
     private static final int REQUEST_IMAGE_CAPTURE = 101;
     private static final int REQUEST_CAMERA = 1;
     private ZXingScannerView scannerView;
-
+    public static final String SCAN_DATA = "scan_data";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -169,13 +171,17 @@ public class BarcodeScanner extends AppCompatActivity implements ZXingScannerVie
 */
     @Override
     public void handleResult(Result result) {
+
         final String scanResult = result.getText();
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Scan Result");
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int i) {
-                scannerView.resumeCameraPreview(BarcodeScanner.this);
+                //scannerView.resumeCameraPreview(BarcodeScanner.this);
+                Intent intent = new Intent(BarcodeScanner.this,ARview.class);
+                intent.putExtra(SCAN_DATA,scanResult);
+                startActivity(intent);
             }
         });
         builder.setNeutralButton("Visit", new DialogInterface.OnClickListener() {
