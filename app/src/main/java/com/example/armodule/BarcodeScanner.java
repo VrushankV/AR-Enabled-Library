@@ -9,26 +9,19 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.hardware.Camera;
+
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.util.SparseArray;
-import android.view.View;
+
 import android.widget.ImageView;
-import android.widget.TextView;
+
 import android.widget.Toast;
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
+
 import com.google.zxing.Result;
 
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
-import static androidx.mediarouter.media.MediaControlIntent.EXTRA_MESSAGE;
 
 
 public class BarcodeScanner extends AppCompatActivity implements ZXingScannerView.ResultHandler {
@@ -123,52 +116,7 @@ public class BarcodeScanner extends AppCompatActivity implements ZXingScannerVie
     }
 
 
-    /*public void capturePic(View view) {
-        Intent imageTakeIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-        if(imageTakeIntent.resolveActivity(getPackageManager())!= null)
-        {
-            Log.d("HEllo","GOO");
-            startActivityForResult(imageTakeIntent,REQUEST_IMAGE_CAPTURE);
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int request_code,int result_code, Intent data) {
-
-
-        super.onActivityResult(request_code, result_code, data);
-        if (request_code == REQUEST_IMAGE_CAPTURE && result_code == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            mImageView.setImageBitmap(imageBitmap);
-
-
-            final TextView txtView = (TextView) findViewById(R.id.txtContent);
-
-
-            BarcodeDetector detector =
-                    new BarcodeDetector.Builder(getApplicationContext())
-                            .setBarcodeFormats(Barcode.CODE_128 | Barcode.EAN_13 | Barcode.QR_CODE)
-                            .build();
-            if (!detector.isOperational()) {
-                txtView.setText("Could not set up the detector!");
-                return;
-            } else {
-                Frame frame = new Frame.Builder().setBitmap(imageBitmap).build();
-                final SparseArray<Barcode> barcodes = detector.detect(frame);
-
-                Log.d("Debugging", Boolean.toString(barcodes.toString().equals("{}")));
-                Barcode thisCode = barcodes.valueAt(0);
-
-                txtView.setText(thisCode.rawValue);
-            }
-
-        }
-
-
-    }
-*/
     @Override
     public void handleResult(Result result) {
 
