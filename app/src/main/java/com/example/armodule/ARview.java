@@ -1,9 +1,5 @@
 package com.example.armodule;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -17,8 +13,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Config;
+import com.google.ar.core.Config.CloudAnchorMode;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -26,6 +26,7 @@ import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.codelab.cloudanchor.helpers.CloudAnchorManager;
 import com.google.ar.core.codelab.cloudanchor.helpers.FirebaseManager;
+import com.google.ar.core.codelab.cloudanchor.helpers.LibraryData;
 import com.google.ar.core.codelab.cloudanchor.helpers.ResolveDialogFragment;
 import com.google.ar.core.codelab.cloudanchor.helpers.SnackbarHelper;
 import com.google.ar.core.codelab.cloudanchor.helpers.StorageManager;
@@ -34,25 +35,23 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.AnchorNode;
-import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
-
-import java.util.ArrayList;
-import java.util.Map;
-
-import com.google.ar.core.Config;
-import com.google.ar.core.Config.CloudAnchorMode;
-import com.google.ar.core.Session;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import static com.example.armodule.BarcodeScanner.SCAN_DATA;
 
@@ -66,7 +65,7 @@ public class ARview extends AppCompatActivity {
         private static final double MIN_OPENGL_VERSION = 3.0;
         ArrayList<Anchor> anchorList = new ArrayList<Anchor>();
 
-        private Scene arScene;
+    private Scene arScene;
         private ArFragment arFragment;
         private ModelRenderable andyRenderable;
         private AnchorNode currentAnchorNode;
@@ -76,6 +75,7 @@ public class ARview extends AppCompatActivity {
         private Button resolveButton;
         private FirebaseManager firebaseManager;
         ArrayList<AnchorNode> anchorNodeList = new ArrayList<>();
+        private static final String KEY_PREFIX = "anchor;";
 
 //        private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
 //        private final SnackbarHelper snackbarHelper = new SnackbarHelper();
@@ -106,7 +106,41 @@ public class ARview extends AppCompatActivity {
 
 
             bookId = getIntent().getStringExtra(SCAN_DATA);
-            Toast.makeText(getApplicationContext(), bookId, Toast.LENGTH_LONG).show();
+            resolveButton = findViewById(R.id.resolve_button);
+
+        tvData = findViewById(R.id.textView);
+        FirebaseApp firebaseApp = FirebaseApp.initializeApp(this);
+        rootRef = FirebaseDatabase.getInstance(firebaseApp).getReference().child("shared_anchor_codelab_root");
+        DatabaseReference.goOnline();
+
+        // Read Local Database
+        HashMap<String, ArrayList<String>> Books = new HashMap<>();
+
+
+        String line = "";
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("data.csv")));
+
+            while ((line = br.readLine()) != null) {
+                String [] data = line.split(",");
+
+                ArrayList<String> a = new ArrayList<>();
+                a.add(data[0]);
+                a.add(data[2]);
+                Books.put(data[1],a);
+            }
+
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Toast.makeText(getApplicationContext(),"GET OUT 1",Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getApplicationContext(),"GET OUT 2 ",Toast.LENGTH_LONG).show();
+         }
+
+
+        //Toast.makeText(getApplicationContext(), bookId, Toast.LENGTH_LONG).show();
             setContentView(R.layout.activity_arview);
             arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         Session session;
@@ -133,10 +167,7 @@ public class ARview extends AppCompatActivity {
 
 
 
-         resolveButton = findViewById(R.id.resolve_button);
 
-         tvData = findViewById(R.id.textView);
-            tvDistance = findViewById(R.id.tvDistance);
 
             // When you build a Renderable, Sceneform loads its resources in the background while returning
             // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
@@ -206,7 +237,7 @@ public class ARview extends AppCompatActivity {
 
         public void onUpdate() {
             Frame frame = arFragment.getArSceneView().getArFrame();
-
+            tvDistance = findViewById(R.id.tvDistance);
             Log.d("API123", "onUpdateframe... current anchor node " + (currentAnchorNode == null));
 
             Log.d("BUZZZZZZ TEsSTINGGG::: ","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
@@ -221,7 +252,7 @@ public class ARview extends AppCompatActivity {
                 ///Compute the straight-line distance.
                 float distanceMeters = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
                 tvDistance.setText("Distance from camera: " + distanceMeters + " metres");
-                Log.d("BUZZZZZZ TEsSTINGGG::: ","Distance from camera:"  + Float.toString(distanceMeters) +  "metres");
+                //Log.d("BUZZZZZZ TEsSTINGGG::: ","Distance from camera:"  + Float.toString(distanceMeters) +  "metres");
                 /*float[] distance_vector = currentAnchor.getPose().inverse()
                         .compose(cameraPose).getTranslation();
                 float totalDistanceSquared = 0;
@@ -331,7 +362,10 @@ public class ARview extends AppCompatActivity {
             String cloudAnchorId = anchor.getCloudAnchorId();
             firebaseManager.nextShortCode(shortCode -> {
                 if (shortCode != null) {
-                    firebaseManager.storeUsingShortCode(shortCode, cloudAnchorId);
+
+                LibraryData ld = new LibraryData(bookId,cloudAnchorId);
+               //firebaseManager.storeUsingShortCode(shortCode, cloudAnchorId);
+               rootRef.child(KEY_PREFIX+shortCode).setValue(ld);
                     snackbarHelper
                             .showMessage(arFragment.getActivity(), "Cloud Anchor Hosted. Short code: " + shortCode);
                 } else {
@@ -361,7 +395,8 @@ public class ARview extends AppCompatActivity {
                         "A Cloud Anchor ID for the short code " + shortCode + " was not found.");
                 return;
             }
-            //
+
+
             //Toast.makeText(this,cloudAnchorId,Toast.LENGTH_LONG).show();
             //resolveButton.setEnabled(false);
             cloudAnchorManager.resolveCloudAnchor(
@@ -391,9 +426,7 @@ public class ARview extends AppCompatActivity {
     }
     public void onResolveAllButtonPressed(View view){
         //DO HERE
-        FirebaseApp firebaseApp = FirebaseApp.initializeApp(this);
-        rootRef = FirebaseDatabase.getInstance(firebaseApp).getReference().child("shared_anchor_codelab_root");
-        DatabaseReference.goOnline();
+
 
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
 
