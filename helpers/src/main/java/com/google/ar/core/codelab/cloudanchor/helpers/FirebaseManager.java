@@ -103,7 +103,7 @@ public class FirebaseManager {
               @Override
               public void onDataChange(DataSnapshot dataSnapshot) {
                 // Listener invoked when the data is successfully read from Firebase.
-                listener.onCloudAnchorIdAvailable(String.valueOf(dataSnapshot.getValue()));
+                listener.onCloudAnchorIdAvailable(dataSnapshot.getValue(LibraryData.class).cloudAnchorId);
               }
 
               @Override

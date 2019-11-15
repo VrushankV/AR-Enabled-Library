@@ -4,6 +4,9 @@ public class LibraryData {
     public String BookId;
     public String cloudAnchorId;
 
+    public LibraryData(){
+
+    }
     public LibraryData(String bId,String cId){
         BookId = bId;
         cloudAnchorId = cId;

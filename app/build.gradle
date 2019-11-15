@@ -54,7 +54,6 @@ sceneform.asset('sampledata/models/andy.obj',
         'src/main/assets/andy')
 
 
-
 sceneform.asset('sampledata/models/model.obj',
         'default',
         'sampledata/models/model.sfa',

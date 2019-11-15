@@ -3,6 +3,7 @@ package com.example.armodule;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -76,6 +77,7 @@ public class ARview extends AppCompatActivity {
         private FirebaseManager firebaseManager;
         ArrayList<AnchorNode> anchorNodeList = new ArrayList<>();
         private static final String KEY_PREFIX = "anchor;";
+        public static final String SHELF_VIEW = "shelf_view";
 
 //        private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
 //        private final SnackbarHelper snackbarHelper = new SnackbarHelper();
@@ -85,13 +87,13 @@ public class ARview extends AppCompatActivity {
 //        config.setCloudAnchorMode(CloudAnchorMode.ENABLED);
 //        return config;
 //    }
-        private TextView tvData;
+        //private TextView tvData;
         String bookId;
+    HashMap<String, ArrayList<String>> Books = new HashMap<>();
 
     private final CloudAnchorManager cloudAnchorManager = new CloudAnchorManager();
     private final SnackbarHelper snackbarHelper = new SnackbarHelper();
     private DatabaseReference rootRef;
-
     @Override
         @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
         // CompletableFuture requires api level 24
@@ -108,13 +110,13 @@ public class ARview extends AppCompatActivity {
             bookId = getIntent().getStringExtra(SCAN_DATA);
             resolveButton = findViewById(R.id.resolve_button);
 
-        tvData = findViewById(R.id.textView);
+
         FirebaseApp firebaseApp = FirebaseApp.initializeApp(this);
         rootRef = FirebaseDatabase.getInstance(firebaseApp).getReference().child("shared_anchor_codelab_root");
         DatabaseReference.goOnline();
 
         // Read Local Database
-        HashMap<String, ArrayList<String>> Books = new HashMap<>();
+
 
 
         String line = "";
@@ -290,13 +292,13 @@ public class ARview extends AppCompatActivity {
             return true;
         }
 
-    public void distanceCalculator(View view){
+    /*public void distanceCalculator(View view){
         Pose startPose = anchorList.get(0).getPose();
         Pose endPose = anchorList.get(1).getPose();
 
 // Clean up the anchor
-      /*session.removeAnchors(Collections.singleton(startAnchor));
-      startAnchor = null;*/
+      *//*session.removeAnchors(Collections.singleton(startAnchor));
+      startAnchor = null;*//*
 
 // Compute the difference vector between the two hit locations.
         float dx = startPose.tx() - endPose.tx();
@@ -319,7 +321,7 @@ public class ARview extends AppCompatActivity {
             currentAnchorNode.setParent(null);
             currentAnchorNode = null;
         }
-    }
+    }*/
 
     private synchronized void setNewAnchor(@Nullable Anchor anchor) {
         /*if (currentAnchorNode != null) {
@@ -426,6 +428,7 @@ public class ARview extends AppCompatActivity {
     }
     public void onResolveAllButtonPressed(View view){
         //DO HERE
+        //tvData = findViewById(R.id.textView);
 
 
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -436,23 +439,31 @@ public class ARview extends AppCompatActivity {
                 if (dataSnapshot.exists()) {
                     for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                         String key = snapshot.getKey();
-                        tvData.append(key+"\t");
+
+
                         if(key.startsWith("anchor;")){
+                            String bId = snapshot.child("BookId").getValue(String.class);
+                            //tvData.append(bId+"\t");
                             int shortCode = Integer.parseInt(key.substring(key.length()-3));
-                            firebaseManager.getCloudAnchorId(shortCode,cloudAnchorId -> {
-                                if (cloudAnchorId == null || cloudAnchorId.isEmpty()) {
-                                    snackbarHelper.showMessage(
-                                            arFragment.getActivity(),
-                                            "A Cloud Anchor ID for the short code " + shortCode + " was not found.");
-                                    return;
-                                }
-                                //Toast.makeText(getApplicationContext(),cloudAnchorId,Toast.LENGTH_LONG).show();
-                                //resolveButton.setEnabled(false);
-                                cloudAnchorManager.resolveCloudAnchor(
-                                        arFragment.getArSceneView().getSession(),
-                                        cloudAnchorId,
-                                        anchor -> onResolvedAnchorAvailable(anchor, shortCode));
-                            });
+                            //Toast.makeText(getApplicationContext(),String.valueOf(bId.equals(bookId)),Toast.LENGTH_LONG).show();
+                            if(bId.equals(bookId)){
+                                firebaseManager.getCloudAnchorId(shortCode,cloudAnchorId -> {
+                                    if (cloudAnchorId == null || cloudAnchorId.isEmpty()) {
+                                        snackbarHelper.showMessage(
+                                                arFragment.getActivity(),
+                                                "A Cloud Anchor ID for the short code " + shortCode + " was not found.");
+                                        return;
+                                    }
+                                    //Toast.makeText(getApplicationContext(),cloudAnchorId,Toast.LENGTH_LONG).show();
+                                    //resolveButton.setEnabled(false);
+
+                                    cloudAnchorManager.resolveCloudAnchor(
+                                            arFragment.getArSceneView().getSession(),
+                                            cloudAnchorId,
+                                            anchor -> onResolvedAnchorAvailable(anchor, shortCode));
+                                });
+                            }
+
                         }
                     }
 
@@ -464,6 +475,12 @@ public class ARview extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),"BYE", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    public void onShelfButtonPressed(View view){
+        Intent intent = new Intent(this, ShelfDisplay.class);
+        intent.putExtra(SHELF_VIEW,Books.get(bookId).get(1));
+        startActivity(intent);
     }
 }
 
