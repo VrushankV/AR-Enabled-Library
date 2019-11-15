@@ -7,9 +7,12 @@
         android:name="android.hardware.camera2"
         android:required="true" />
     <uses-feature android:name="android.hardware.camera2.autofocus" />
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+    <uses-feature
+        android:name="android.hardware.camera.ar"
+        android:required="true" />
+
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -20,19 +23,22 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false"
         tools:ignore="GoogleAppIndexingWarning">
+        <activity android:name=".ShelfView"></activity>
+        <activity android:name=".ShelfDisplay" />
 
-        <meta-data android:name="com.google.ar.core" android:value="required" />
+        <meta-data
+            android:name="com.google.ar.core"
+            android:value="required" />
         <meta-data
             android:name="com.google.android.ar.API_KEY"
-            android:value="AIzaSyDy2zxHrh66UHp0w_8v3KcKGVjLmxX8uL8"/>
+            android:value="AIzaSyDy2zxHrh66UHp0w_8v3KcKGVjLmxX8uL8" />
 
-        <activity android:name=".ARview"
+        <activity
+            android:name=".ARview"
             android:configChanges="orientation|screenSize"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:exported="true"
             android:screenOrientation="locked"
-            android:exported="true">
-
-        </activity>
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity android:name=".BarcodeScanner" />
         <activity android:name=".MainActivity">
             <intent-filter>
