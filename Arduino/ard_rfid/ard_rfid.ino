@@ -16,6 +16,7 @@ int j=0;
 
 String Name;//user name
 long Cod;//user number
+String id;
 int n ;//The number of card you want to detect (optional)  
 
 void setup() {
@@ -23,8 +24,7 @@ void setup() {
   SPI.begin();  // Init SPI bus
   mfrc522.PCD_Init(); // Init MFRC522 card
   
-  Serial.println("CLEARSHEET");                 // clears starting at row 1
-  Serial.println("LABEL,Date,Time,Name,Cod");// make four columns (Date,Time,[Name:"user name"]line 48 & 52,[Number:"user number"]line 49 & 53)
+  //Serial.println("Name,Cod");// make four columns (Date,Time,[Name:"user name"]line 48 & 52,[Number:"user number"]line 49 & 53)
    }
     
 void loop() {
@@ -41,13 +41,15 @@ void loop() {
      card_ID[i]=mfrc522.uid.uidByte[i];
 
        if(card_ID[i]==Name1[i]){
-       Name="MATHS";//user name
+       Name="ANSI C";//user name
+       id = "9781259004612";
        Cod=123;//user number
        j=0;//first number in the NumbCard array : NumbCard[j]
       }
       else if(card_ID[i]==Name2[i]){
-       Name="COMPUTER SCIENCE";//user name
-       Cod=121;//user number
+       Name="Data Structures Using C";//user name
+       id = "9788131702291";
+       Cod=221;//user number
        j=1;//Second number in the NumbCard array : NumbCard[j]
       }
       else{
@@ -63,7 +65,7 @@ void loop() {
       else{
       NumbCard[j] = 1;//put 1 in the NumbCard array : NumbCard[j]={1,1} to let the arduino know if the card was detecting 
       n++;//(optional)
-      Serial.print("DATA,DATE,TIME," + Name);//send the Name to excel
+      Serial.print( Name + ","+id);//send the Name to excel
       Serial.print(",");
       Serial.println(Cod); //send the Number to excel
       /*  digitalWrite(GreenLed,HIGH);
@@ -71,7 +73,7 @@ void loop() {
       digitalWrite(Buzzer,HIGH);
       delay(30);
       digitalWrite(Buzzer,LOW);*/
-      Serial.println("SAVEWORKBOOKAS,Names/WorkNames");
+      //Serial.println("SAVEWORKBOOKAS,Names/WorkNames");
       }
       delay(1000);
 cont:
